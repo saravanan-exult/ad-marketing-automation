@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+/dist/
+/build/
+/.next/
+/out/
+frontend/build/
+frontend/coverage/
+frontend/.eslintcache/
+backend/dist/
+backend/data/
+backend/coverage/
+backend/.eslintcache/
+backend/.nyc_output/
+*.tsbuildinfo
+Adobe_Task.pdf
+SDE4_Tech_Case_Study_RevisedA.docx
+task.md
+sample.csv
+
+# Environment files
+.env
+.env.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Test coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

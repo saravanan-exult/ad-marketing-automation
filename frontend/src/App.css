@@ -1,0 +1,21 @@
+.app-shell { font-family: sans-serif; display: flex; flex-direction: column; min-height: 100vh; background-color: #f4f6f8; }
+.navbar { background: #1f2937; color: white; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+.navbar nav button { background: transparent; color: #d1d5db; border: none; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
+.navbar nav button.active { background: #374151; color: white; font-weight: bold; }
+.content { padding: 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+.panel { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+.metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.metric-card { padding: 1rem; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; text-align: center; }
+.metric-card p { font-size: 1.5rem; font-weight: bold; margin: 5px 0; }
+.table-container { overflow-x: auto; margin-top: 1rem; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+.error-badge { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+.success-badge { background: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+.warning-badge { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+.suggestion-pill { background: #e0f2fe; color: #075985; padding: 4px 8px; border-radius: 99px; font-size: 0.8rem; font-weight: bold; }
+.primary-btn { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.small-btn { background: #e5e7eb; color: #374151; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+.audit-section { margin-top: 2rem; display: flex; flex-direction: column; gap: 10px; }
+.audit-section input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+.assistant-response { background: #f3f4f6; padding: 1.5rem; border-radius: 6px; margin-top: 1rem; }

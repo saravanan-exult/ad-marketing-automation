@@ -1,0 +1,19 @@
+name: Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Backend Tests
+        run: cd backend && npm install && npm test
+      - name: Run Frontend Tests
+        run: cd frontend && npm install && npm test
+      - name: Build Docker Image
+        run: docker build -t adtech-app .
+      - name: Deploy to Staging
+        run: echo "Deploying to K8s staging environment..."
