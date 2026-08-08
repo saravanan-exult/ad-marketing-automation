@@ -24,7 +24,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
       aria-label="Main Navigation"
     >
       <div className="sidebar-header">
-        {isExpanded && <span className="brand-title">AdTech Automation</span>}
+        {isExpanded && (
+          <span className="brand-title">
+            <svg
+              width="60"
+              height="60"
+              viewBox="0 0 680 680"
+              role="img"
+              style={{
+                maxWidth: "60px",
+                display: "inline-block",
+                verticalAlign: "middle",
+              }}
+            >
+              <path
+                d="M170,340
+                C170,255 265,255 340,340
+                C415,425 510,425 510,340
+                C510,255 415,255 340,340
+                C265,425 170,425 170,340 Z"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="34"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              ></path>
+
+              <path
+                d="M340 300 L 352 328 L 380 340 L 352 352 L 340 380 L 328 352 L 300 340 L 328 328 Z"
+                fill="#FFFFFF"
+              ></path>
+            </svg>
+            AdTech
+          </span>
+        )}
         <button
           type="button"
           className="toggle-sidebar-btn"
@@ -32,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           aria-label={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
           title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
         >
-          {isExpanded ? "◀" : "▶"}
+          ☰
         </button>
       </div>
 
@@ -57,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           title="AI Review"
         >
           <span className="nav-icon">🔍</span>
-          {isExpanded && <span className="nav-label">2. AI Review</span>}
+          {isExpanded && <span className="nav-label">2. Review</span>}
         </button>
 
         <button
@@ -78,9 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           title="Dashboard & Audit"
         >
           <span className="nav-icon">📊</span>
-          {isExpanded && (
-            <span className="nav-label">4. Dashboard & Audit</span>
-          )}
+          {isExpanded && <span className="nav-label">Dashboard & Audit</span>}
         </button>
 
         <button
@@ -90,13 +121,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           title="RAG Assistant"
         >
           <span className="nav-icon">🤖</span>
-          {isExpanded && <span className="nav-label">5. RAG Assistant</span>}
+          {isExpanded && <span className="nav-label">Chat Assistant</span>}
         </button>
       </nav>
 
       {isExpanded && (
         <div className="sidebar-footer">
-          <p className="footer-version">App v2.4</p>
+          <p className="footer-version">App v1.0</p>
         </div>
       )}
     </aside>

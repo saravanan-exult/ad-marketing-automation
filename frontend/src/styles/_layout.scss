@@ -1,8 +1,7 @@
 // Component Styles: App Shell & Layout
 .app-shell {
-  font-family: $font-family;
   display: grid;
-  grid-template-columns: 230px 1fr;
+  grid-template-columns: 280px 1fr;
   min-height: 100vh;
   background-color: $bg-shell;
 }
