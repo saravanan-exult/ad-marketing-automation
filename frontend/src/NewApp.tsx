@@ -19,9 +19,10 @@ import { DashboardStep } from "./features/dashboard/DashboardStep";
 import { AssistantStep } from "./features/assistant/AssistantStep";
 import "./styles/main.scss";
 
-function App() {
+export function App() {
   const [step, setStep] = useState<AppStep>("upload");
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(true);
+
   const [_selectedFile, setSelectedFile] = useState<File | null>(null);
   const [_jobId, setJobId] = useState<string>("");
   const [validation, setValidation] = useState<ValidationResult | null>(null);
@@ -29,7 +30,7 @@ function App() {
     useState<ReconciliationResult | null>(null);
   const [history, setHistory] = useState<AuditHistoryItem[]>([]);
   const [pipelineStatus, setPipelineStatus] = useState<PipelineJob[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const isMounted = useIsMounted();
 
@@ -50,12 +51,12 @@ function App() {
   }, [loadDashboardData, step]);
 
   const handleUploadSuccess = (
-    jobId: string,
-    validationData: ValidationResult,
+    newJobId: string,
+    newValidation: ValidationResult,
     file: File,
   ) => {
-    setJobId(jobId);
-    setValidation(validationData);
+    setJobId(newJobId);
+    setValidation(newValidation);
     setSelectedFile(file);
     setStep("review");
   };

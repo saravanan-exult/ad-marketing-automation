@@ -1,0 +1,41 @@
+// Component Styles: Tables & Badges
+.table-container {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid $border-color;
+  }
+
+  th {
+    font-weight: 600;
+    color: $primary-color;
+    background: $bg-metric;
+  }
+}
+
+.error-badge {
+  background: $error-bg;
+  color: $error-color;
+  padding: 4px 8px;
+  border-radius: $border-radius-sm;
+  font-size: 0.8rem;
+  display: inline-block;
+}
+
+.success-badge {
+  background: $success-bg;
+  color: $success-color;
+  padding: 4px 8px;
+  border-radius: $border-radius-sm;
+  font-size: 0.8rem;
+  display: inline-block;
+}

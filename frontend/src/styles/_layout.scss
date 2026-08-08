@@ -1,0 +1,23 @@
+// Component Styles: App Shell & Layout
+.app-shell {
+  font-family: $font-family;
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  min-height: 100vh;
+  background-color: $bg-shell;
+}
+
+.content {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.panel {
+  background: $bg-panel;
+  padding: 2rem;
+  border-radius: $border-radius;
+  box-shadow: $box-shadow;
+  margin-bottom: 2rem;
+}

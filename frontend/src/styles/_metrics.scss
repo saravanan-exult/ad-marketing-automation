@@ -1,0 +1,21 @@
+// Component Styles: Metrics & Cards
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric-card {
+  padding: 1rem;
+  border: 1px solid $border-color;
+  border-radius: 6px;
+  background: $bg-metric;
+  text-align: center;
+
+  p {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 5px 0;
+  }
+}

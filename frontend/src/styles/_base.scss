@@ -1,0 +1,11 @@
+// Global Resets & Base Styles
+body {
+  margin: 0;
+  background: $bg-body;
+  color: $text-main;
+  font-family: $font-family;
+}
+
+* {
+  box-sizing: border-box;
+}
