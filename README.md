@@ -7,6 +7,12 @@ This repository contains a full-stack marketing automation prototype built to sa
 - `backend/`: NestJS backend for file ingestion, validation, AI-assisted suggestions, and reconciliation.
 - `frontend/`: React frontend prototype for upload, review, reconciliation, and RAG assistant.
 
+## Architecture & Documentation
+
+- [`SYSTEM_DESIGN.md`](./SYSTEM_DESIGN.md): High-level system architecture, data models, scalability, and non-functional requirements.
+- [`BACKEND_ARCHITECTURE.md`](./BACKEND_ARCHITECTURE.md): NestJS backend design, module breakdown, validation engine, and RAG/Temporal workflows.
+- [`CICD_STRATEGY.md`](./CICD_STRATEGY.md): End-to-end CI/CD strategy, pipeline Mermaid diagrams, Blue/Green rollout, and rollback mechanics.
+
 ## Setup
 
 ### Backend

@@ -22,6 +22,7 @@ The platform follows a production-ready modular architecture:
 
 - **Containerization**: Multi-stage production `Dockerfile` and `docker-compose.yml` orchestrating Backend, PostgreSQL + PGVector, and Redis.
 - **CI/CD Pipeline**: GitHub Actions workflow (`.github/workflows/ci-cd.yml`) executing automated backend tests, security audits, frontend builds, and Docker image packaging.
+- **Detailed Design**: Comprehensive architecture, blue/green rollout strategies, rollback mechanics, and stage-by-stage breakdowns are documented in [`CICD_STRATEGY.md`](./CICD_STRATEGY.md).
 
 ## Trade-offs & Production Evolution
 
