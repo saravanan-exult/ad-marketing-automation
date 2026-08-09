@@ -1,0 +1,37 @@
+{
+  "jobId": "2d13797c-179e-4882-a58a-9fd7075c3d30",
+  "fileName": "sample.csv",
+  "rawFilePath": "D:\\Adobe_Interview_Task\\data\\2d13797c-179e-4882-a58a-9fd7075c3d30-sample.csv",
+  "validation": {
+    "fileName": "sample.csv",
+    "totalRows": 1,
+    "parsedRows": 1,
+    "missingColumns": [],
+    "additionalColumns": [],
+    "duplicateCount": 0,
+    "missingCount": 0,
+    "invalidDateCount": 0,
+    "invalidCategoryCount": 0,
+    "records": [
+      {
+        "campaignName": "Summer Sale",
+        "date": "2025-01-01",
+        "region": "NA",
+        "spend": "100.00",
+        "impressions": "1000",
+        "platform": "Google",
+        "campaignId": "C123",
+        "errors": [],
+        "suggestedMatch": null,
+        "confidence": null
+      }
+    ],
+    "qualityScore": 100,
+    "summary": "Parsed 1 rows. 0 duplicates removed. 0 missing values. 0 invalid categories. File quality score: 100%.",
+    "fileHash": "b1f7f670e35830e42ae989b11f594f2f0729f57ae629242b94873806478e6e21"
+  },
+  "status": "VALIDATED",
+  "createdAt": "2026-08-09T07:55:46.698Z",
+  "temporalWorkflowId": "ingestion-workflow-2d13797c-179e-4882-a58a-9fd7075c3d30",
+  "isTemporalNative": false
+}

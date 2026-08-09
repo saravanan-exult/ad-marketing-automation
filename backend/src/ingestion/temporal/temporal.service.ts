@@ -36,6 +36,20 @@ export class TemporalService implements OnModuleInit {
   private async connectClient(): Promise<boolean> {
     if (this.isConnected && this.client) return true;
 
+    const shouldSkipTemporal =
+      process.env.NODE_ENV === "test" ||
+      process.env.JEST_WORKER_ID !== undefined ||
+      process.env.DISABLE_TEMPORAL === "true";
+
+    if (shouldSkipTemporal) {
+      this.logger.log(
+        "Skipping Temporal client connection in test environment.",
+      );
+      this.isConnected = false;
+      this.client = null;
+      return false;
+    }
+
     const address = process.env.TEMPORAL_HOST || "localhost:7233";
     try {
       this.logger.log(

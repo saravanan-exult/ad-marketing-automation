@@ -11,6 +11,8 @@
     "outDir": "dist",
     "rootDir": ".",
     "incremental": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "types": ["node", "jest"]
   }
 }

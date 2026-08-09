@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
-import * as request from "supertest";
+import request from "supertest";
 import { AppModule } from "../app.module";
 
 describe("IngestionController (e2e)", () => {
@@ -13,7 +13,7 @@ describe("IngestionController (e2e)", () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-  });
+  }, 30000);
 
   afterEach(async () => {
     await app.close();
@@ -33,5 +33,5 @@ describe("IngestionController (e2e)", () => {
         expect(res.body).toHaveProperty("jobId");
         expect(res.body).toHaveProperty("validation");
       });
-  });
+  }, 30000);
 });

@@ -27,6 +27,16 @@ export class TemporalWorkerService implements OnModuleInit, OnModuleDestroy {
   }
 
   async startWorker() {
+    const shouldSkipTemporal =
+      process.env.NODE_ENV === "test" ||
+      process.env.JEST_WORKER_ID !== undefined ||
+      process.env.DISABLE_TEMPORAL === "true";
+
+    if (shouldSkipTemporal) {
+      this.logger.log("Skipping Temporal worker startup in test environment.");
+      return;
+    }
+
     const address = process.env.TEMPORAL_HOST || "localhost:7233";
     try {
       this.logger.log(
