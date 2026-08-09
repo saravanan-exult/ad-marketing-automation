@@ -5,6 +5,7 @@ import { ValidationService } from "./validation.service";
 import { ReconciliationService } from "./reconciliation.service";
 import { AssistantService } from "./assistant.service";
 import { DataWarehouseService } from "./warehouse.service";
+import { VectorStoreService } from "./vector-store.service";
 import { TemporalModule } from "./temporal/temporal.module";
 
 @Module({
@@ -17,6 +18,7 @@ import { TemporalModule } from "./temporal/temporal.module";
     ReconciliationService,
     AssistantService,
     DataWarehouseService,
+    VectorStoreService,
   ],
 })
 export class IngestionModule {}

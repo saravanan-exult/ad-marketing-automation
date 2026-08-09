@@ -8,6 +8,7 @@ backend/node_modules/
 /build/
 /.next/
 /out/
+data
 frontend/build/
 frontend/coverage/
 frontend/.eslintcache/

@@ -3,6 +3,7 @@ version: "3.8"
 services:
   postgres:
     image: ankane/pgvector:v0.5.0
+    restart: unless-stopped
     environment:
       POSTGRES_USER: adtech
       POSTGRES_PASSWORD: securepassword123
@@ -11,6 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - adtech-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U adtech -d adtech_db"]
       interval: 5s
@@ -19,8 +22,11 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    networks:
+      - adtech-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -29,12 +35,15 @@ services:
 
   temporal:
     image: temporalio/auto-setup:1.22.4
+    restart: unless-stopped
     ports:
       - "7233:7233"
       - "8233:8233"
     environment:
       - DB=sqlite
       - DB_PORT=5432
+    networks:
+      - adtech-network
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "7233"]
       interval: 5s
@@ -45,14 +54,34 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "3001:3001"
     environment:
       - PORT=3001
+      - NODE_ENV=production
       - DATABASE_URL=postgresql://adtech:securepassword123@postgres:5432/adtech_db
       - REDIS_URL=redis://redis:6379
       - TEMPORAL_HOST=temporal:7233
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - backend-data:/app/backend/data
+    networks:
+      - adtech-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3001/health",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,5 +90,10 @@ services:
       temporal:
         condition: service_healthy
 
+networks:
+  adtech-network:
+    driver: bridge
+
 volumes:
   pgdata:
+  backend-data:

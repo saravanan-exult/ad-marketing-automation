@@ -25,7 +25,51 @@ export class IngestionModel {
   private uploadedHashes = new Set<string>();
   private schedules: IngestionSchedule[] = [];
 
-  constructor() {}
+  constructor() {
+    this.schedules = [
+      {
+        scheduleId: "sched-meta-daily",
+        sourceName: "Meta Business Suite",
+        frequency: "DAILY",
+        executionTime: "07:00 AM",
+        notificationEmail: "alerts-marketing@company.com",
+        notificationWebhook:
+          "https://hooks.slack.com/services/marketing/meta-ingest",
+        enabled: true,
+        status: "ACTIVE",
+        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        lastRunAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+        nextRunAt: new Date(Date.now() + 3600000 * 19).toISOString(),
+      },
+      {
+        scheduleId: "sched-google-daily",
+        sourceName: "Google Ads",
+        frequency: "DAILY",
+        executionTime: "08:00 AM",
+        notificationEmail: "devops-adtech@company.com",
+        notificationWebhook:
+          "https://hooks.slack.com/services/marketing/google-ingest",
+        enabled: true,
+        status: "ACTIVE",
+        createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+        lastRunAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+        nextRunAt: new Date(Date.now() + 3600000 * 20).toISOString(),
+      },
+      {
+        scheduleId: "sched-amazon-hourly",
+        sourceName: "Amazon DSP",
+        frequency: "HOURLY",
+        executionTime: "Every hour at :00",
+        notificationEmail: "amazon-ops@company.com",
+        notificationWebhook: "",
+        enabled: true,
+        status: "ACTIVE",
+        createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
+        lastRunAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+        nextRunAt: new Date(Date.now() + 3600000 * 1).toISOString(),
+      },
+    ];
+  }
 
   async ensureStorageDir() {
     await fs.mkdir(STORAGE_PATH, { recursive: true });
@@ -67,11 +111,51 @@ export class IngestionModel {
     return this.uploadedHashes.has(hash);
   }
 
+  getSchedules(): IngestionSchedule[] {
+    return this.schedules;
+  }
+
+  getSchedule(scheduleId: string): IngestionSchedule | undefined {
+    return this.schedules.find((s) => s.scheduleId === scheduleId);
+  }
+
   addSchedule(schedule: IngestionSchedule) {
     if (this.schedules.length >= MAX_SCHEDULES) {
       this.schedules.shift();
     }
     this.schedules.push(schedule);
+  }
+
+  deleteSchedule(scheduleId: string): boolean {
+    const idx = this.schedules.findIndex((s) => s.scheduleId === scheduleId);
+    if (idx !== -1) {
+      this.schedules.splice(idx, 1);
+      return true;
+    }
+    return false;
+  }
+
+  toggleScheduleStatus(scheduleId: string): IngestionSchedule | undefined {
+    const sched = this.schedules.find((s) => s.scheduleId === scheduleId);
+    if (sched) {
+      sched.status = sched.status === "ACTIVE" ? "PAUSED" : "ACTIVE";
+      sched.enabled = sched.status === "ACTIVE";
+    }
+    return sched;
+  }
+
+  updateScheduleRunTime(scheduleId: string) {
+    const sched = this.schedules.find((s) => s.scheduleId === scheduleId);
+    if (sched) {
+      sched.lastRunAt = new Date().toISOString();
+      const intervalMs =
+        sched.frequency === "HOURLY"
+          ? 3600000
+          : sched.frequency === "WEEKLY"
+            ? 86400000 * 7
+            : 86400000;
+      sched.nextRunAt = new Date(Date.now() + intervalMs).toISOString();
+    }
   }
 
   getHistory(): IngestionJob[] {
@@ -258,16 +342,96 @@ export class IngestionService {
     };
   }
 
+  getSchedules() {
+    return this.modelInstance.getSchedules();
+  }
+
   createSchedule(body: any) {
-    const scheduleId = randomUUID();
+    const scheduleId = `sched-${randomUUID().slice(0, 8)}`;
+    const intervalMs =
+      body.frequency === "HOURLY"
+        ? 3600000
+        : body.frequency === "WEEKLY"
+          ? 86400000 * 7
+          : 86400000;
+
     const sched: IngestionSchedule = {
       scheduleId,
-      ...body,
-      createdAt: new Date().toISOString(),
+      sourceName: body.sourceName,
+      frequency: body.frequency || "DAILY",
+      executionTime: body.executionTime || "07:00 AM",
+      notificationEmail: body.notificationEmail || "",
+      notificationWebhook: body.notificationWebhook || "",
+      enabled: body.enabled !== false,
       status: "ACTIVE",
+      createdAt: new Date().toISOString(),
+      lastRunAt: undefined,
+      nextRunAt: new Date(Date.now() + intervalMs).toISOString(),
     };
     this.modelInstance.addSchedule(sched);
     return sched;
+  }
+
+  deleteSchedule(scheduleId: string) {
+    const deleted = this.modelInstance.deleteSchedule(scheduleId);
+    if (!deleted) throw new NotFoundException("Schedule not found");
+    return { success: true, scheduleId };
+  }
+
+  toggleScheduleStatus(scheduleId: string) {
+    const sched = this.modelInstance.toggleScheduleStatus(scheduleId);
+    if (!sched) throw new NotFoundException("Schedule not found");
+    return sched;
+  }
+
+  async triggerSchedule(scheduleId: string) {
+    const sched = this.modelInstance.getSchedule(scheduleId);
+    if (!sched) throw new NotFoundException("Schedule not found");
+
+    const jobId = randomUUID();
+    const fileName = `automated_${sched.sourceName.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}.csv`;
+
+    // Create a mock campaign record batch for automated ingestion run
+    const mockCsvContent =
+      `Campaign Name,Date,Region,Spend,Impressions,Platform,Campaign ID\n` +
+      `${sched.sourceName} Automated Campaign,${new Date().toISOString().split("T")[0]},NA,4500.00,12000,${sched.sourceName.includes("Meta") ? "Meta" : sched.sourceName.includes("Google") ? "Google" : "Amazon"},CMP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const buffer = Buffer.from(mockCsvContent, "utf-8");
+    const validation = await this.validationService.validateFile(
+      buffer,
+      fileName,
+    );
+
+    const job: IngestionJob = {
+      jobId,
+      fileName,
+      rawFilePath: `${STORAGE_PATH}/${jobId}-${fileName}`,
+      validation,
+      status: "VALIDATED",
+      createdAt: new Date().toISOString(),
+    };
+
+    this.modelInstance.addJob(jobId, job);
+    this.modelInstance.updateScheduleRunTime(scheduleId);
+
+    // Trigger workflow async
+    this.temporalService
+      .startIngestionWorkflow({
+        jobId,
+        fileBuffer: buffer,
+        fileName,
+      })
+      .catch((err) =>
+        console.warn("Temporal trigger async notice:", err.message),
+      );
+
+    return {
+      success: true,
+      message: `Triggered scheduled ingestion for ${sched.sourceName}`,
+      jobId,
+      schedule: sched,
+      validationSummary: validation.summary,
+    };
   }
 
   async pushToAdPlatform(jobId: string) {

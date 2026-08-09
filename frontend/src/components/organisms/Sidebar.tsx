@@ -106,6 +106,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           type="button"
+          className={`nav-item ${currentStep === "scheduling" ? "active" : ""}`}
+          onClick={() => onSelectStep("scheduling")}
+          title="Automated Scheduling"
+        >
+          <span className="nav-icon">⏱</span>
+          {isExpanded && <span className="nav-label">4. Scheduling</span>}
+        </button>
+
+        <button
+          type="button"
           className={`nav-item ${currentStep === "dashboard" ? "active" : ""}`}
           onClick={() => onSelectStep("dashboard")}
           title="Dashboard & Audit"

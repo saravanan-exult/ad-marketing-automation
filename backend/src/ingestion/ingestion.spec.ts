@@ -34,4 +34,30 @@ describe("IngestionController (e2e)", () => {
         expect(res.body).toHaveProperty("validation");
       });
   }, 30000);
+
+  it("/schedule (GET & POST) scheduling flow", async () => {
+    const getRes = await request(app.getHttpServer())
+      .get("/schedule")
+      .expect(200);
+    expect(Array.isArray(getRes.body)).toBe(true);
+
+    const postRes = await request(app.getHttpServer())
+      .post("/schedule")
+      .send({
+        sourceName: "TikTok Ads",
+        frequency: "DAILY",
+        executionTime: "09:00 AM",
+        notificationEmail: "alerts@company.com",
+      })
+      .expect(201); // 201 Created
+
+    expect(postRes.body).toHaveProperty("scheduleId");
+    expect(postRes.body.sourceName).toBe("TikTok Ads");
+
+    const triggerRes = await request(app.getHttpServer())
+      .post(`/schedule/${postRes.body.scheduleId}/trigger`)
+      .expect(201);
+
+    expect(triggerRes.body.success).toBe(true);
+  }, 30000);
 });

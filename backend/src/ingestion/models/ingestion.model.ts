@@ -26,8 +26,14 @@ export interface IngestionJob {
 
 export interface IngestionSchedule {
   scheduleId: string;
-  frequency: string;
-  source: string;
+  sourceName: string;
+  frequency: "HOURLY" | "DAILY" | "WEEKLY" | "MANUAL";
+  executionTime?: string; // e.g. "07:00 AM", "08:00 AM"
+  notificationEmail?: string;
+  notificationWebhook?: string;
+  enabled: boolean;
   createdAt: string;
+  lastRunAt?: string;
+  nextRunAt?: string;
   status: "ACTIVE" | "PAUSED";
 }

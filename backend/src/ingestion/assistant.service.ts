@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import OpenAI from "openai";
+import { VectorStoreService } from "./vector-store.service";
 
 interface VectorDocument {
   id: string;
@@ -16,10 +17,9 @@ interface VectorDocument {
 
 @Injectable()
 export class AssistantService {
-  private documents: VectorDocument[] = [];
   private openai: OpenAI | null = null;
 
-  constructor() {
+  constructor(private readonly vectorStore: VectorStoreService) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (apiKey) {
       this.openai = new OpenAI({ apiKey });
@@ -38,17 +38,18 @@ export class AssistantService {
         });
         embedding = response.data[0].embedding;
       } catch (err) {
-        console.warn(
-          "OpenAI embedding generation failed, using keyword fallback:",
-          err,
-        );
+        console.warn("OpenAI embedding generation failed:", err);
       }
     }
 
-    const doc: VectorDocument = {
+    await this.vectorStore.upsertDocument({
       id: ingestion.jobId,
+      jobId: ingestion.jobId,
+      fileName: ingestion.fileName,
+      status: ingestion.status,
+      createdAt: ingestion.createdAt,
+      qualityScore: ingestion.validation?.qualityScore,
       text,
-      embedding,
       metadata: {
         jobId: ingestion.jobId,
         fileName: ingestion.fileName,
@@ -56,26 +57,8 @@ export class AssistantService {
         createdAt: ingestion.createdAt,
         qualityScore: ingestion.validation?.qualityScore,
       },
-    };
-
-    this.documents = this.documents.filter((d) => d.id !== doc.id);
-    if (this.documents.length >= 200) {
-      this.documents.shift();
-    }
-    this.documents.push(doc);
-  }
-
-  private cosineSimilarity(vecA: number[], vecB: number[]): number {
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
-    }
-    if (normA === 0 || normB === 0) return 0;
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+      embedding: embedding || Array(1536).fill(0),
+    });
   }
 
   async query(queryText: string) {
@@ -92,27 +75,44 @@ export class AssistantService {
       }
     }
 
-    // Score documents by vector cosine similarity or keyword match
-    const scored = this.documents.map((doc) => {
-      let score = 0;
-      if (queryEmbedding && doc.embedding) {
-        score = this.cosineSimilarity(queryEmbedding, doc.embedding);
-      } else {
-        const lowerQ = queryText.toLowerCase();
-        const lowerText = doc.text.toLowerCase();
-        const words = lowerQ.split(/\s+/);
-        let matches = 0;
-        for (const w of words) {
-          if (w.length > 2 && lowerText.includes(w)) matches++;
-        }
-        score = matches / Math.max(1, words.length);
-      }
-      return { doc, score };
-    });
+    let relevantDocs: VectorDocument[] = [];
+    if (queryEmbedding) {
+      const results = await this.vectorStore.searchByEmbedding(
+        queryEmbedding,
+        3,
+      );
+      relevantDocs = results.map((row) => ({
+        id: row.id,
+        text: row.text,
+        embedding: undefined,
+        metadata: {
+          jobId: row.jobId,
+          fileName: row.fileName,
+          status: row.status,
+          createdAt: row.createdAt,
+          qualityScore: row.qualityScore,
+        },
+      }));
+    }
 
-    scored.sort((a, b) => b.score - a.score);
-    const topMatches = scored.filter((s) => s.score > 0.1).slice(0, 3);
-    const relevantDocs = topMatches.map((m) => m.doc);
+    if (relevantDocs.length === 0) {
+      const keywordResults = await this.vectorStore.searchByKeyword(
+        queryText,
+        3,
+      );
+      relevantDocs = keywordResults.map((row) => ({
+        id: row.id,
+        text: row.text,
+        embedding: undefined,
+        metadata: {
+          jobId: row.jobId,
+          fileName: row.fileName,
+          status: row.status,
+          createdAt: row.createdAt,
+          qualityScore: row.qualityScore,
+        },
+      }));
+    }
 
     let answer = "";
     if (this.openai && relevantDocs.length > 0) {

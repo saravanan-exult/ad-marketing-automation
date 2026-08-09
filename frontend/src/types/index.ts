@@ -72,9 +72,24 @@ export interface AssistantResult {
   sources: AssistantSource[];
 }
 
+export interface ScheduleItem {
+  scheduleId: string;
+  sourceName: string;
+  frequency: "HOURLY" | "DAILY" | "WEEKLY" | "MANUAL";
+  executionTime?: string;
+  notificationEmail?: string;
+  notificationWebhook?: string;
+  enabled: boolean;
+  status: "ACTIVE" | "PAUSED";
+  createdAt: string;
+  lastRunAt?: string;
+  nextRunAt?: string;
+}
+
 export type AppStep =
   | "upload"
   | "review"
   | "reconciliation"
+  | "scheduling"
   | "dashboard"
   | "assistant";

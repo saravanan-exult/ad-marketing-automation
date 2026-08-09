@@ -33,6 +33,8 @@ export interface NotificationInput {
   type: "SUCCESS" | "FAILURE" | "WARNING";
   message: string;
   details?: any;
+  webhookUrl?: string;
+  email?: string;
 }
 
 @Injectable()
@@ -93,14 +95,40 @@ export class IngestionActivitiesService {
   async sendNotificationActivity(input: NotificationInput) {
     const timestamp = new Date().toISOString();
     console.log(
-      `[Temporal Activity Notification] [${input.type}] ${input.message} (Channel: ${
-        input.channel || "webhook"
-      })`,
+      `[Temporal Activity Notification] [${input.type}] ${input.message} | Email: ${
+        input.email || "N/A"
+      } | Webhook: ${input.webhookUrl || "N/A"}`,
     );
+
+    if (input.webhookUrl && input.webhookUrl.startsWith("http")) {
+      try {
+        await fetch(input.webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event: "INGESTION_NOTIFICATION",
+            type: input.type,
+            message: input.message,
+            details: input.details,
+            timestamp,
+          }),
+        });
+      } catch (err: any) {
+        console.error(
+          `Failed to send webhook to ${input.webhookUrl}:`,
+          err.message,
+        );
+      }
+    }
+
     return {
       delivered: true,
       type: input.type,
-      channel: input.channel || "webhook",
+      channel:
+        input.channel ||
+        (input.webhookUrl ? "webhook" : input.email ? "email" : "console"),
+      emailSentTo: input.email,
+      webhookDispatchedTo: input.webhookUrl,
       timestamp,
     };
   }

@@ -7,6 +7,7 @@ import { ReconciliationService } from "../reconciliation.service";
 import { AssistantService } from "../assistant.service";
 import { DataWarehouseService } from "../warehouse.service";
 import { IngestionModel } from "../ingestion.service";
+import { VectorStoreService } from "../vector-store.service";
 
 @Module({
   providers: [
@@ -18,6 +19,7 @@ import { IngestionModel } from "../ingestion.service";
     AssistantService,
     DataWarehouseService,
     IngestionModel,
+    VectorStoreService,
   ],
   exports: [TemporalService, TemporalWorkerService, IngestionActivitiesService],
 })

@@ -15,6 +15,7 @@ import { Sidebar } from "./components/organisms/Sidebar";
 import { UploadStep } from "./features/upload/UploadStep";
 import { ReviewStep } from "./features/review/ReviewStep";
 import { ReconciliationStep } from "./features/reconciliation/ReconciliationStep";
+import { SchedulingStep } from "./features/scheduling/SchedulingStep";
 import { DashboardStep } from "./features/dashboard/DashboardStep";
 import { AssistantStep } from "./features/assistant/AssistantStep";
 import "./styles/main.scss";
@@ -117,6 +118,8 @@ function App() {
             onProceedToDashboard={() => setStep("dashboard")}
           />
         )}
+
+        {step === "scheduling" && <SchedulingStep />}
 
         {step === "dashboard" && (
           <DashboardStep

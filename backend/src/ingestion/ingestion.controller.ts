@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -32,9 +33,29 @@ export class IngestionController {
     return this.ingestionService.startUpload(file);
   }
 
+  @Get("schedule")
+  async getSchedules() {
+    return this.ingestionService.getSchedules();
+  }
+
   @Post("schedule")
-  async schedule(@Body() body: ScheduleDto) {
+  async createSchedule(@Body() body: ScheduleDto) {
     return this.ingestionService.createSchedule(body);
+  }
+
+  @Delete("schedule/:id")
+  async deleteSchedule(@Param("id") id: string) {
+    return this.ingestionService.deleteSchedule(id);
+  }
+
+  @Post("schedule/:id/toggle")
+  async toggleSchedule(@Param("id") id: string) {
+    return this.ingestionService.toggleScheduleStatus(id);
+  }
+
+  @Post("schedule/:id/trigger")
+  async triggerSchedule(@Param("id") id: string) {
+    return this.ingestionService.triggerSchedule(id);
   }
 
   @Post("push/:jobId")
@@ -75,6 +96,11 @@ export class IngestionController {
   @Get("pipeline-status")
   async pipelineStatus() {
     return this.ingestionService.getPipelineStatus();
+  }
+
+  @Get("health")
+  async health() {
+    return { status: "ok", timestamp: new Date().toISOString() };
   }
 
   @Get("download/:jobId")
