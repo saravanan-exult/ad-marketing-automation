@@ -1,5 +1,5 @@
 # Production Dockerfile for Ad Tech Marketing Automation Platform
-FROM node:20-alpine AS builder
+FROM node:24.11.0-alpine AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ COPY frontend ./frontend
 RUN npm run build --prefix backend
 RUN npm run build --prefix frontend
 
-FROM node:20-alpine AS runner
+FROM node:24.11.0-alpine AS runner
 WORKDIR /app
 
 COPY --from=builder /app/backend/package.json ./backend/

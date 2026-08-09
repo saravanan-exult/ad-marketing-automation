@@ -1,4 +1,4 @@
-# Adobe Interview Task
+# ADTech Marketing Automation
 
 This repository contains a full-stack marketing automation prototype built to satisfy the interview task requirements.
 
@@ -36,5 +36,7 @@ The prototype includes:
 - RAG assistant endpoint with retrieval from local ingestion logs
 - Spend reconciliation against a stubbed Ad platform API
 - Review and approval workflow APIs
+- **Temporal Workflow Orchestration**: Production-grade orchestration using `@temporalio/client`, `@temporalio/worker`, `@temporalio/workflow`, and `@temporalio/activity` with graceful in-memory fallback for zero-config local testing.
+- **Docker Compose**: Fully containerized with PostgreSQL (`pgvector`), Redis, Temporal Server, and NestJS Backend.
 
 This is a working baseline. Production readiness is supported by modular architecture, idempotency via file hashes, and clear extension points for LLM, orchestration, and Databricks.

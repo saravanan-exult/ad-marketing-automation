@@ -47,6 +47,11 @@ export class IngestionController {
     return this.ingestionService.getValidation(jobId);
   }
 
+  @Get("workflow-status/:jobId")
+  async workflowStatus(@Param("jobId") jobId: string) {
+    return this.ingestionService.getWorkflowStatus(jobId);
+  }
+
   @Post("approve")
   async approve(@Body() body: ApproveDto) {
     return this.ingestionService.approve(body);

@@ -27,6 +27,20 @@ services:
       timeout: 5s
       retries: 5
 
+  temporal:
+    image: temporalio/auto-setup:1.22.4
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    environment:
+      - DB=sqlite
+      - DB_PORT=5432
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7233"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -37,11 +51,14 @@ services:
       - PORT=3001
       - DATABASE_URL=postgresql://adtech:securepassword123@postgres:5432/adtech_db
       - REDIS_URL=redis://redis:6379
+      - TEMPORAL_HOST=temporal:7233
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      temporal:
         condition: service_healthy
 
 volumes:

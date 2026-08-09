@@ -6,26 +6,92 @@ import {
 import { ValidationService } from "./validation.service";
 import { ReconciliationService } from "./reconciliation.service";
 import { AssistantService } from "./assistant.service";
+import { DataWarehouseService } from "./warehouse.service";
+import { IngestionJob, IngestionSchedule } from "./models/ingestion.model";
+import { TemporalService } from "./temporal/temporal.service";
 import { randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { ApproveDto } from "./dto/approve.dto";
-const STORAGE_PATH = join(__dirname, "../../data");
+const STORAGE_PATH = join(__dirname, "../../../data");
+const MAX_JOBS = 500;
+const MAX_HISTORY = 500;
+const MAX_SCHEDULES = 100;
+
+@Injectable()
+export class IngestionModel {
+  private jobs = new Map<string, IngestionJob>();
+  private history: IngestionJob[] = [];
+  private uploadedHashes = new Set<string>();
+  private schedules: IngestionSchedule[] = [];
+
+  constructor() {}
+
+  async ensureStorageDir() {
+    await fs.mkdir(STORAGE_PATH, { recursive: true });
+  }
+
+  addJob(jobId: string, job: IngestionJob) {
+    if (this.jobs.size >= MAX_JOBS) {
+      const oldestKey = this.jobs.keys().next().value;
+      if (oldestKey) this.jobs.delete(oldestKey);
+    }
+    this.jobs.set(jobId, job);
+
+    if (this.history.length >= MAX_HISTORY) {
+      this.history.shift();
+    }
+    this.history.push(job);
+  }
+
+  getJob(jobId: string): IngestionJob | undefined {
+    return this.jobs.get(jobId);
+  }
+
+  getAllJobs(): IngestionJob[] {
+    return Array.from(this.jobs.values());
+  }
+
+  addHash(hash: string) {
+    if (this.uploadedHashes.size > 2000) {
+      const iterator = this.uploadedHashes.values();
+      for (let i = 0; i < 1000; i++) {
+        const val = iterator.next().value;
+        if (val) this.uploadedHashes.delete(val);
+      }
+    }
+    this.uploadedHashes.add(hash);
+  }
+
+  hasHash(hash: string): boolean {
+    return this.uploadedHashes.has(hash);
+  }
+
+  addSchedule(schedule: IngestionSchedule) {
+    if (this.schedules.length >= MAX_SCHEDULES) {
+      this.schedules.shift();
+    }
+    this.schedules.push(schedule);
+  }
+
+  getHistory(): IngestionJob[] {
+    return this.history;
+  }
+}
 
 @Injectable()
 export class IngestionService {
-  private jobs = new Map<string, any>();
-  private history = [] as any[];
-  private uploadedHashes = new Set<string>();
-
   constructor(
     private readonly validationService: ValidationService,
     private readonly reconciliationService: ReconciliationService,
     private readonly assistantService: AssistantService,
+    private readonly dataWarehouseService: DataWarehouseService,
+    private readonly modelInstance: IngestionModel,
+    private readonly temporalService: TemporalService,
   ) {}
 
   async startUpload(file: any) {
-    await fs.mkdir(STORAGE_PATH, { recursive: true });
+    await this.modelInstance.ensureStorageDir();
 
     const validation = await this.validationService.validateFile(
       file.buffer,
@@ -33,11 +99,10 @@ export class IngestionService {
     );
 
     // Idempotency check: prevent duplicate ingestion if file hash already processed
-    if (this.uploadedHashes.has(validation.fileHash)) {
-      // Find existing job
-      const existing = Array.from(this.jobs.values()).find(
-        (j) => j.validation.fileHash === validation.fileHash,
-      );
+    if (this.modelInstance.hasHash(validation.fileHash)) {
+      const existing = this.modelInstance
+        .getAllJobs()
+        .find((j) => j.validation.fileHash === validation.fileHash);
       if (existing) {
         return {
           ...existing,
@@ -47,24 +112,33 @@ export class IngestionService {
       }
     }
 
-    this.uploadedHashes.add(validation.fileHash);
+    this.modelInstance.addHash(validation.fileHash);
     const jobId = randomUUID();
     const rawFilePath = join(STORAGE_PATH, `${jobId}-${file.originalname}`);
     await fs.writeFile(rawFilePath, file.buffer);
 
-    const hosted = {
+    // Trigger Temporal Orchestration Workflow
+    const workflowInfo = await this.temporalService.startIngestionWorkflow({
+      jobId,
+      fileBuffer: file.buffer,
+      fileName: file.originalname,
+      autoApprove: false,
+    });
+
+    const hosted: IngestionJob = {
       jobId,
       fileName: file.originalname,
       rawFilePath,
       validation,
       status: "VALIDATED",
       createdAt: new Date().toISOString(),
+      temporalWorkflowId: workflowInfo.workflowId,
+      isTemporalNative: workflowInfo.isTemporalNative,
     };
-    this.jobs.set(jobId, hosted);
-    this.history.push(hosted);
-    this.assistantService.indexIngestion(hosted);
+    this.modelInstance.addJob(jobId, hosted);
+    await this.assistantService.indexIngestion(hosted);
 
-    // Persist audit trail to json file
+    // Persist audit trail to json file with safe error handling
     try {
       await fs.writeFile(
         join(STORAGE_PATH, `${jobId}-audit.json`),
@@ -78,14 +152,22 @@ export class IngestionService {
   }
 
   getValidation(jobId: string) {
-    const job = this.jobs.get(jobId);
+    const job = this.modelInstance.getJob(jobId);
     if (!job) throw new NotFoundException("Job not found");
     return job.validation;
   }
 
   async approve(body: ApproveDto) {
-    const job = this.jobs.get(body.jobId);
+    const job = this.modelInstance.getJob(body.jobId);
     if (!job) throw new NotFoundException("Job not found");
+
+    // Signal Temporal Workflow about approval
+    await this.temporalService.signalApproval(body.jobId, {
+      approvedBy: body.approvedBy || "unknown",
+      approvedCorrections: body.approvedCorrections || [],
+      notes: body.notes || "",
+    });
+
     const cleaned = this.validationService.applyApprovals(
       job.validation,
       body.approvedCorrections || [],
@@ -103,12 +185,32 @@ export class IngestionService {
       approvedAt: job.approvedAt,
       notes: body.notes || "",
     };
-    this.assistantService.indexIngestion(job);
+
+    // Push approved and validated clean data to Snowflake / Databricks Data Warehouse
+    try {
+      const rawBuffer = await fs.readFile(job.rawFilePath);
+      const dwResult = await this.dataWarehouseService.pushToWarehouse(
+        body.jobId,
+        job.fileName,
+        rawBuffer,
+        job.cleanedData || [],
+        job,
+      );
+      job.audit.warehouse = dwResult;
+    } catch (dwError) {
+      console.warn(
+        "Failed to push dataset to Databricks/Snowflake warehouse:",
+        dwError,
+      );
+      job.audit.warehouseError = dwError.message;
+    }
+
+    await this.assistantService.indexIngestion(job);
     return { jobId: body.jobId, reconciliation, audit: job.audit };
   }
 
   getReconciliation(jobId: string) {
-    const job = this.jobs.get(jobId);
+    const job = this.modelInstance.getJob(jobId);
     if (!job) throw new NotFoundException("Job not found");
     return job.reconciliation;
   }
@@ -118,11 +220,11 @@ export class IngestionService {
   }
 
   getHistory() {
-    return this.history;
+    return this.modelInstance.getHistory();
   }
 
   getPipelineStatus() {
-    return Array.from(this.jobs.values()).map((job) => ({
+    return this.modelInstance.getAllJobs().map((job) => ({
       jobId: job.jobId,
       status: job.status,
       fileName: job.fileName,
@@ -131,7 +233,7 @@ export class IngestionService {
   }
 
   getDownloadReport(jobId: string) {
-    const job = this.jobs.get(jobId);
+    const job = this.modelInstance.getJob(jobId);
     if (!job) throw new NotFoundException("Job not found");
     return {
       jobId,
@@ -142,22 +244,34 @@ export class IngestionService {
     };
   }
 
-  private schedules = [] as any[];
+  async getWorkflowStatus(jobId: string) {
+    const job = this.modelInstance.getJob(jobId);
+    if (!job) throw new NotFoundException("Job not found");
+    const temporalState = await this.temporalService.getWorkflowState(jobId);
+    return {
+      jobId,
+      jobStatus: job.status,
+      temporalState: temporalState || {
+        status: job.status,
+        message: "No active Temporal state found",
+      },
+    };
+  }
 
   createSchedule(body: any) {
     const scheduleId = randomUUID();
-    const sched = {
+    const sched: IngestionSchedule = {
       scheduleId,
       ...body,
       createdAt: new Date().toISOString(),
       status: "ACTIVE",
     };
-    this.schedules.push(sched);
+    this.modelInstance.addSchedule(sched);
     return sched;
   }
 
   async pushToAdPlatform(jobId: string) {
-    const job = this.jobs.get(jobId);
+    const job = this.modelInstance.getJob(jobId);
     if (!job) throw new NotFoundException("Job not found");
     if (job.status !== "APPROVED") {
       throw new BadRequestException(

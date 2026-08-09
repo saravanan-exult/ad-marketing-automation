@@ -59,6 +59,9 @@ export class AssistantService {
     };
 
     this.documents = this.documents.filter((d) => d.id !== doc.id);
+    if (this.documents.length >= 200) {
+      this.documents.shift();
+    }
     this.documents.push(doc);
   }
 
