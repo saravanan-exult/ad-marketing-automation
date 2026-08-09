@@ -16,6 +16,7 @@ const STORAGE_PATH = join(__dirname, "../../data");
 export class IngestionService {
   private jobs = new Map<string, any>();
   private history = [] as any[];
+  private uploadedHashes = new Set<string>();
 
   constructor(
     private readonly validationService: ValidationService,
@@ -25,14 +26,32 @@ export class IngestionService {
 
   async startUpload(file: any) {
     await fs.mkdir(STORAGE_PATH, { recursive: true });
-    const jobId = randomUUID();
-    const rawFilePath = join(STORAGE_PATH, `${jobId}-${file.originalname}`);
-    await fs.writeFile(rawFilePath, file.buffer);
 
     const validation = await this.validationService.validateFile(
       file.buffer,
       file.originalname,
     );
+
+    // Idempotency check: prevent duplicate ingestion if file hash already processed
+    if (this.uploadedHashes.has(validation.fileHash)) {
+      // Find existing job
+      const existing = Array.from(this.jobs.values()).find(
+        (j) => j.validation.fileHash === validation.fileHash,
+      );
+      if (existing) {
+        return {
+          ...existing,
+          idempotentDuplicateNotice:
+            "File with identical hash already uploaded and processed.",
+        };
+      }
+    }
+
+    this.uploadedHashes.add(validation.fileHash);
+    const jobId = randomUUID();
+    const rawFilePath = join(STORAGE_PATH, `${jobId}-${file.originalname}`);
+    await fs.writeFile(rawFilePath, file.buffer);
+
     const hosted = {
       jobId,
       fileName: file.originalname,
@@ -44,6 +63,17 @@ export class IngestionService {
     this.jobs.set(jobId, hosted);
     this.history.push(hosted);
     this.assistantService.indexIngestion(hosted);
+
+    // Persist audit trail to json file
+    try {
+      await fs.writeFile(
+        join(STORAGE_PATH, `${jobId}-audit.json`),
+        JSON.stringify(hosted, null, 2),
+      );
+    } catch (e) {
+      console.warn("Failed to persist audit trail to disk:", e);
+    }
+
     return hosted;
   }
 
